@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Spotify Sync</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='styles.css') }}"
+        />
+    </head>
+    <body>
+        <div class="container">
+            <h1>Spotify Sync</h1>
+            <p>Sync your liked songs to a playlist</p>
+            <div id="loading" class="loading" style="display: none">
+                <div class="loader"></div>
+                <p id="loading-message">Connecting to Spotify...</p>
+            </div>
+            <div id="login-button" class="button-container">
+                <a
+                    href="{{ url_for('login') }}"
+                    class="button-login"
+                    onclick="showLoading()"
+                    >Login with Spotify</a
+                >
+            </div>
+        </div>
+
+        <script>
+            const loadingMessages = [
+                "Connecting to Spotify...",
+                "Comparing playlists...",
+                "Analyzing your music taste...",
+            ];
+
+            let currentMessageIndex = 0;
+
+            function showLoading() {
+                document.getElementById("loading").style.display = "flex";
+                document.getElementById("login-button").style.display = "none";
+                rotateLoadingMessage();
+            }
+
+            function rotateLoadingMessage() {
+                const loadingMessageElement =
+                    document.getElementById("loading-message");
+                setInterval(() => {
+                    currentMessageIndex =
+                        (currentMessageIndex + 1) % loadingMessages.length;
+                    loadingMessageElement.textContent =
+                        loadingMessages[currentMessageIndex];
+                }, Math.floor(Math.random() * (8000 - 6000 + 1)) + 6000); // Change message every 6-8 seconds
+            }
+        </script>
+    </body>
+</html>
