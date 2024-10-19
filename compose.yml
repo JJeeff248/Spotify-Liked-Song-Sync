@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+      - REDIRECT_URI=${REDIRECT_URI}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+

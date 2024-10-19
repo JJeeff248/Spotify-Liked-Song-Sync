@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 import json
 import time
+from database import create_user, get_user, update_user
+import requests
 
 load_dotenv()
 
@@ -36,55 +38,82 @@ def callback():
         if "error" in token_info:
             return f"Error getting access token: {token_info['error']}", 400
 
-        session["access_token"] = token_info["access_token"]
-        session["refresh_token"] = token_info["refresh_token"]
+        access_token = token_info["access_token"]
+        refresh_token = token_info["refresh_token"]
+
+        # Get user profile to get Spotify ID
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_profile = requests.get("https://api.spotify.com/v1/me", headers=headers).json()
+        spotify_id = user_profile["id"]
+
+        # Check if user exists in database
+        user = get_user(spotify_id)
+        if not user:
+            # Create new user if not exists
+            create_user(spotify_id, access_token, refresh_token)
+        else:
+            # Update existing user's tokens
+            update_user(spotify_id, {"access_token": access_token, "refresh_token": refresh_token})
+
+        session["spotify_id"] = spotify_id
         return redirect("/settings")
     except Exception as e:
         return f"An error occurred: {str(e)}", 500
 
 @app.route("/settings", methods=["GET"])
 def settings():
-    if "access_token" not in session:
+    if "spotify_id" not in session:
         return redirect("/")
     
-    playlists = get_user_playlists(session["access_token"])
-    
-    # Find matching playlist
-    matching_playlist_id = find_matching_playlist(session["access_token"], playlists)
+    user = get_user(session["spotify_id"])
+    if not user:
+        return redirect("/logout")
+
+    playlists = get_user_playlists(user["access_token"])
     
     current_playlist = None
-    if "playlist_id" in session:
-        current_playlist = get_playlist_info(session["access_token"], session["playlist_id"])
-    elif matching_playlist_id:
-        current_playlist = get_playlist_info(session["access_token"], matching_playlist_id)
-        session["playlist_id"] = matching_playlist_id
-    
-    is_syncing = "is_syncing" in session and session["is_syncing"]
+    matching_playlist_id = None
+
+    if user["playlist_id"]:
+        # User already has a playlist set, so just get its info
+        current_playlist = get_playlist_info(user["access_token"], user["playlist_id"])
+    else:
+        # User doesn't have a playlist set, so find a matching one
+        matching_playlist_id = find_matching_playlist(user["access_token"], playlists)
+        if matching_playlist_id:
+            current_playlist = get_playlist_info(user["access_token"], matching_playlist_id)
+            update_user(session["spotify_id"], {"playlist_id": matching_playlist_id})
     
     return render_template("settings.html", 
                            playlists=playlists, 
                            current_playlist=current_playlist, 
                            matching_playlist_id=matching_playlist_id,
-                           is_syncing=is_syncing)
+                           is_syncing=user["is_syncing"])
 
 @app.route("/toggle_sync", methods=["POST"])
 def toggle_sync():
-    if "access_token" not in session:
+    if "spotify_id" not in session:
         return redirect("/")
     
-    if "is_syncing" in session and session["is_syncing"]:
+    user = get_user(session["spotify_id"])
+    if not user:
+        return redirect("/logout")
+
+    if user["is_syncing"]:
         # Stop syncing
-        session["is_syncing"] = False
+        update_user(session["spotify_id"], {"is_syncing": False})
         # Here you would typically stop your background sync process
     else:
         # Start syncing
         playlist_id = request.form.get("playlist_id")
         sync_interval = int(request.form.get("sync_interval"))
-        session["playlist_id"] = playlist_id
-        session["sync_interval"] = sync_interval
-        session["is_syncing"] = True
+        update_user(session["spotify_id"], {
+            "playlist_id": playlist_id,
+            "sync_interval": sync_interval,
+            "is_syncing": True
+        })
         # Here you would typically start your background sync process
-        sync_liked_songs(session["access_token"], playlist_id, sync_interval)
+        sync_liked_songs(user["access_token"], playlist_id, sync_interval)
     
     return redirect("/settings")
 

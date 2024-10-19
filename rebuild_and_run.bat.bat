@@ -1,15 +1,11 @@
 @echo off
 echo Stopping existing container...
-docker stop spotify-sync-container
-
-echo Removing old container...
-docker rm spotify-sync-container
+docker-compose down
 
 echo Rebuilding Docker image...
-docker build -t spotify-sync .
+docker-compose build
 
 echo Starting new container...
-docker run -d -p 5000:5000 --env-file .env --name spotify-sync-container spotify-sync
+docker-compose up -d
 
-echo Done! New container is running.
-
+echo Done! New stack is running.
