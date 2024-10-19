@@ -25,6 +25,47 @@
                     >Login with Spotify</a
                 >
             </div>
+            <p class="privacy-link">
+                <span class="privacy-button" onclick="openPrivacyModal()">Privacy Statement</span>
+            </p>
+        </div>
+
+        <!-- Privacy Modal -->
+        <div id="privacyModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closePrivacyModal()">&times;</span>
+                <h2>Privacy Statement</h2>
+                <p>
+                    We value your privacy and aim to be transparent about the data we collect and store. 
+                    This application accesses your Spotify account to sync your liked songs to a playlist 
+                    and stores certain information to provide you with a seamless experience.
+                </p>
+                <h3>Data We Store</h3>
+                <p>
+                    We store the following information from your Spotify account in our database:
+                </p>
+                <ul>
+                    <li>Your Spotify user ID</li>
+                    <li>Access and refresh tokens (securely encrypted)</li>
+                    <li>Your selected playlist ID for syncing</li>
+                    <li>Timestamps of your last sync operation</li>
+                </ul>
+                <p>
+                    We do not store your personal information such as your name, email address, or any of your 
+                    Spotify listening history beyond what's necessary for the syncing process.
+                </p>
+                <h3>How We Use Your Data</h3>
+                <p>
+                    The stored data is used solely for the purpose of maintaining your sync preferences and 
+                    ensuring efficient synchronization between your liked songs and the selected playlist. 
+                    We do not share this data with any third parties.
+                </p>
+                <p>
+                    By using this application, you agree to this data storage and to Spotify's terms of service 
+                    and privacy policy. You can revoke access to your Spotify account at any time through your 
+                    Spotify account settings or by contacting us.
+                </p>
+            </div>
         </div>
 
         <script>
@@ -51,6 +92,22 @@
                     loadingMessageElement.textContent =
                         loadingMessages[currentMessageIndex];
                 }, Math.floor(Math.random() * (8000 - 6000 + 1)) + 6000); // Change message every 6-8 seconds
+            }
+
+            function openPrivacyModal() {
+                document.getElementById("privacyModal").style.display = "flex";
+            }
+
+            function closePrivacyModal() {
+                document.getElementById("privacyModal").style.display = "none";
+            }
+
+            // Close the modal if the user clicks outside of it
+            window.onclick = function(event) {
+                var modal = document.getElementById("privacyModal");
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
             }
         </script>
     </body>

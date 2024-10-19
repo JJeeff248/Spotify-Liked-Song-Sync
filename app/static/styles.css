@@ -78,7 +78,12 @@ body::after {
     }
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     text-align: center;
     color: var(--accent-color);
     margin-top: 0;
@@ -332,4 +337,109 @@ progress::-webkit-progress-value {
 .loading p {
     margin-top: 1rem;
     font-weight: bold;
+}
+
+/* Privacy link styles */
+.privacy-link {
+    text-align: center;
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.privacy-button {
+    color: var(--text-color);
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.privacy-button::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--accent-color);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-out;
+}
+
+.privacy-button:hover {
+    color: var(--accent-color);
+}
+
+.privacy-button:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--bg-color);
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    color: var(--secondary-color);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover,
+.close:focus {
+    color: var(--accent-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal h2 {
+    color: var(--accent-color);
+    margin-top: 0;
+}
+
+.modal p {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.modal-content h3 {
+    color: var(--accent-color);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.modal-content ul {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.modal-content li {
+    margin-bottom: 0.25rem;
 }
