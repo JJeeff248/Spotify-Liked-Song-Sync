@@ -16,29 +16,35 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 def background_sync():
-    while True:
-        users = get_all_users()
-        current_time = datetime.now(timezone.utc)
-        
-        for user in users:
-            if user["is_syncing"] and user["playlist_id"] and user["sync_interval"]:
-                last_sync = user["last_sync"] or datetime.min.replace(tzinfo=timezone.utc)
-                time_since_last_sync = (current_time - last_sync).total_seconds() / 60  # in minutes
-                
-                if time_since_last_sync >= user["sync_interval"]:
-                    try:
-                        new_token_info = refresh_token(user["refresh_token"])
-                        access_token = new_token_info["access_token"]
-                        
-                        update_user(user["_id"], {"access_token": access_token})
-                        
-                        sync_liked_songs(access_token, user["playlist_id"], user["sync_interval"])
-                        
-                        update_user(user["_id"], {"last_sync": datetime.now(timezone.utc)})
-                    except Exception as e:
-                        print(f"Error syncing for user {user['_id']}: {str(e)}")
-        
-        time.sleep(60)
+    with app.app_context():
+        while True:
+            users = get_all_users()
+            current_time = datetime.now(timezone.utc)
+            
+            for user in users:
+                if user["is_syncing"] and user["playlist_id"] and user["sync_interval"]:
+                    last_sync = user["last_sync"]
+                    if last_sync:
+                        last_sync = last_sync.replace(tzinfo=timezone.utc)
+                    else:
+                        last_sync = datetime.min.replace(tzinfo=timezone.utc)
+                    
+                    time_since_last_sync = (current_time - last_sync).total_seconds() / 60  # in minutes
+                    
+                    if time_since_last_sync >= user["sync_interval"]:
+                        try:
+                            new_token_info = refresh_token(user["refresh_token"])
+                            access_token = new_token_info["access_token"]
+                            
+                            update_user(user["_id"], {"access_token": access_token})
+                            
+                            sync_liked_songs(access_token, user["playlist_id"], user["sync_interval"])
+                            
+                            update_user(user["_id"], {"last_sync": datetime.now(timezone.utc)})
+                        except Exception as e:
+                            print(f"Error syncing for user {user['_id']}: {str(e)}")
+            
+            time.sleep(60)
 
 sync_thread = threading.Thread(target=background_sync, daemon=True)
 sync_thread.start()
