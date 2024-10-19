@@ -9,16 +9,16 @@
 <body>
     <div class="container">
         <h1>Spotify Sync Settings</h1>
-        <div id="processing" class="processing" style="display: none;">
-            <div class="loader"></div>
+        <div id="processing" class="processing" hidden>
+            <div class="loader" aria-label="Loading"></div>
             <p id="processing-message">Processing...</p>
-            <div id="sync-progress" style="display: none;">
+            <div id="sync-progress" hidden>
                 <p>Syncing: <span id="current-song">0</span> / <span id="total-songs">0</span></p>
                 <progress id="progress-bar" value="0" max="100"></progress>
             </div>
         </div>
         <div id="content">
-            <div id="current-playlist" class="current-playlist" {% if not current_playlist %}style="display: none;"{% endif %}>
+            <div id="current-playlist" class="current-playlist" {% if not current_playlist %}hidden{% endif %}>
                 <img id="playlist-artwork" src="{{ current_playlist.images[0].url if current_playlist else '' }}" alt="Playlist artwork" class="playlist-artwork">
                 <p id="playlist-name">{{ current_playlist.name if current_playlist else '' }}</p>
             </div>
@@ -39,7 +39,7 @@
                 
                 <button type="button" id="newPlaylistBtn" class="button">New Playlist</button>
                 
-                <div id="newPlaylistForm" style="display: none;">
+                <div id="newPlaylistForm" hidden>
                     <input type="text" id="newPlaylistName" placeholder="Enter playlist name">
                     <button type="button" id="createPlaylistBtn">CREATE</button>
                 </div>
@@ -57,75 +57,6 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const processingElement = document.getElementById('processing');
-            const contentElement = document.getElementById('content');
-            const syncProgress = document.getElementById('sync-progress');
-            const currentSong = document.getElementById('current-song');
-            const totalSongs = document.getElementById('total-songs');
-            const progressBar = document.getElementById('progress-bar');
-            const toggleButton = document.getElementById('toggleButton');
-
-            // Show processing spinner when form is submitted
-            document.getElementById('settingsForm').addEventListener('submit', function() {
-                processingElement.style.display = 'block';
-                contentElement.style.display = 'none';
-            });
-
-            // Handle sync progress updates
-            const eventSource = new EventSource("{{ url_for('sync_progress') }}");
-            eventSource.onmessage = function(event) {
-                const progress = JSON.parse(event.data);
-                currentSong.textContent = progress.current;
-                totalSongs.textContent = progress.total;
-                progressBar.value = progress.percentage;
-                syncProgress.style.display = 'block';
-            };
-
-            // Update button text based on sync status
-            toggleButton.textContent = toggleButton.classList.contains('button-stop') ? 'Stop Syncing' : 'Start Sync';
-
-            const newPlaylistBtn = document.getElementById('newPlaylistBtn');
-            const newPlaylistForm = document.getElementById('newPlaylistForm');
-            const createPlaylistBtn = document.getElementById('createPlaylistBtn');
-            const playlistSelect = document.getElementById('playlist_id');
-
-            newPlaylistBtn.addEventListener('click', function() {
-                newPlaylistForm.style.display = 'flex';
-                newPlaylistBtn.style.display = 'none';
-            });
-
-            createPlaylistBtn.addEventListener('click', function() {
-                const playlistName = document.getElementById('newPlaylistName').value;
-                if (playlistName) {
-                    fetch('/create_playlist', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({name: playlistName}),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.id) {
-                            const option = new Option(data.name, data.id);
-                            option.dataset.image = data.images[0]?.url || '';
-                            playlistSelect.add(option);
-                            playlistSelect.value = data.id;
-                            newPlaylistForm.style.display = 'none';
-                            newPlaylistBtn.style.display = 'block';
-                        } else {
-                            alert('Failed to create playlist');
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                        alert('An error occurred while creating the playlist');
-                    });
-                }
-            });
-        });
-    </script>
+    <script src="{{ url_for('static', filename='settings.js') }}"></script>
 </body>
 </html>
