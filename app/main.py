@@ -27,25 +27,19 @@ def background_sync():
                 
                 if time_since_last_sync >= user["sync_interval"]:
                     try:
-                        # Refresh the access token
                         new_token_info = refresh_token(user["refresh_token"])
                         access_token = new_token_info["access_token"]
                         
-                        # Update the user's access token in the database
                         update_user(user["_id"], {"access_token": access_token})
                         
-                        # Perform the sync
                         sync_liked_songs(access_token, user["playlist_id"], user["sync_interval"])
                         
-                        # Update the last sync time using update_user
                         update_user(user["_id"], {"last_sync": datetime.now(timezone.utc)})
                     except Exception as e:
                         print(f"Error syncing for user {user['_id']}: {str(e)}")
         
-        # Wait for a short time before checking for users again
         time.sleep(60)
 
-# Start the background sync thread when the app starts
 sync_thread = threading.Thread(target=background_sync, daemon=True)
 sync_thread.start()
 
@@ -77,18 +71,14 @@ def callback():
         access_token = token_info["access_token"]
         refresh_token = token_info["refresh_token"]
 
-        # Get user profile to get Spotify ID
         headers = {"Authorization": f"Bearer {access_token}"}
         user_profile = requests.get("https://api.spotify.com/v1/me", headers=headers).json()
         spotify_id = user_profile["id"]
 
-        # Check if user exists in database
         user = get_user(spotify_id)
         if not user:
-            # Create new user if not exists
             create_user(spotify_id, access_token, refresh_token)
         else:
-            # Update existing user's tokens
             update_user(spotify_id, {"access_token": access_token, "refresh_token": refresh_token})
 
         session["spotify_id"] = spotify_id
@@ -111,10 +101,8 @@ def settings():
     matching_playlist_id = None
 
     if user["playlist_id"]:
-        # User already has a playlist set, so just get its info
         current_playlist = get_playlist_info(user["access_token"], user["playlist_id"])
     else:
-        # User doesn't have a playlist set, so find a matching one
         matching_playlist_id = find_matching_playlist(user["access_token"], playlists)
         if matching_playlist_id:
             current_playlist = get_playlist_info(user["access_token"], matching_playlist_id)
@@ -140,11 +128,8 @@ def toggle_sync():
         return redirect("/logout")
 
     if user["is_syncing"]:
-        # Stop syncing
         update_user(session["spotify_id"], {"is_syncing": False})
-        # Here you would typically stop your background sync process
     else:
-        # Start syncing
         playlist_id = request.form.get("playlist_id")
         sync_interval = int(request.form.get("sync_interval"))
         update_user(session["spotify_id"], {
@@ -152,7 +137,6 @@ def toggle_sync():
             "sync_interval": sync_interval,
             "is_syncing": True
         })
-        # Here you would typically start your background sync process
         sync_liked_songs(user["access_token"], playlist_id, sync_interval)
     
     return redirect("/settings")
