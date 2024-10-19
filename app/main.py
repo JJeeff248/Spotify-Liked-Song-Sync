@@ -5,13 +5,49 @@ import os
 from dotenv import load_dotenv
 import json
 import time
-from database import create_user, get_user, update_user
+from database import create_user, get_user, update_user, get_all_users, get_user_sync_interval
 import requests
+import threading
+from datetime import datetime, timezone
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+def background_sync():
+    while True:
+        users = get_all_users()
+        current_time = datetime.now(timezone.utc)
+        
+        for user in users:
+            if user["is_syncing"] and user["playlist_id"] and user["sync_interval"]:
+                last_sync = user["last_sync"] or datetime.min.replace(tzinfo=timezone.utc)
+                time_since_last_sync = (current_time - last_sync).total_seconds() / 60  # in minutes
+                
+                if time_since_last_sync >= user["sync_interval"]:
+                    try:
+                        # Refresh the access token
+                        new_token_info = refresh_token(user["refresh_token"])
+                        access_token = new_token_info["access_token"]
+                        
+                        # Update the user's access token in the database
+                        update_user(user["_id"], {"access_token": access_token})
+                        
+                        # Perform the sync
+                        sync_liked_songs(access_token, user["playlist_id"], user["sync_interval"])
+                        
+                        # Update the last sync time using update_user
+                        update_user(user["_id"], {"last_sync": datetime.now(timezone.utc)})
+                    except Exception as e:
+                        print(f"Error syncing for user {user['_id']}: {str(e)}")
+        
+        # Wait for a short time before checking for users again
+        time.sleep(60)
+
+# Start the background sync thread when the app starts
+sync_thread = threading.Thread(target=background_sync, daemon=True)
+sync_thread.start()
 
 @app.route("/")
 def index():
@@ -84,11 +120,15 @@ def settings():
             current_playlist = get_playlist_info(user["access_token"], matching_playlist_id)
             update_user(session["spotify_id"], {"playlist_id": matching_playlist_id})
     
+    user_id = user["_id"]
+    user_sync_interval = get_user_sync_interval(user_id)
+
     return render_template("settings.html", 
                            playlists=playlists, 
                            current_playlist=current_playlist, 
                            matching_playlist_id=matching_playlist_id,
-                           is_syncing=user["is_syncing"])
+                           is_syncing=user["is_syncing"],
+                           user_sync_interval=user_sync_interval)
 
 @app.route("/toggle_sync", methods=["POST"])
 def toggle_sync():
